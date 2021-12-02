@@ -1,0 +1,135 @@
+version: "3"
+services:
+#  btcpayserver:
+#    restart: unless-stopped
+#    image: nicolasdorier/btcpayserver:1.0.2.106
+#    expose:
+#    - "49392"
+#    environment:
+#      BTCPAY_POSTGRES: User ID=postgres;Host=postgres;Port=5432;Database=btcpayserver${NBITCOIN_NETWORK:-regtest}
+#      BTCPAY_NETWORK: ${NBITCOIN_NETWORK:-regtest}
+#      BTCPAY_BIND: 0.0.0.0:49392
+#      BTCPAY_EXTERNALURL: ${BTCPAY_PROTOCOL:-https}://${BTCPAY_HOST}/
+#      BTCPAY_ROOTPATH: ${BTCPAY_ROOTPATH:-/}
+#      BTCPAY_SSHTRUSTEDFINGERPRINTS: ${BTCPAY_SSHTRUSTEDFINGERPRINTS}
+#      BTCPAY_SSHKEYFILE: ${BTCPAY_SSHKEYFILE}
+#      VIRTUAL_NETWORK: nginx-proxy
+#      VIRTUAL_PORT: 49392
+#      VIRTUAL_HOST: ${BTCPAY_HOST}
+#      VIRTUAL_HOST_NAME: "btcpay"
+#      SSL_POLICY: Mozilla-Modern
+#      LETSENCRYPT_HOST: ${BTCPAY_HOST}
+#      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-<no value>}
+#      BTCPAY_CHAINS: "ltc,btc"
+#      BTCPAY_BTCEXPLORERURL: http://nbxplorer:32838/
+#      BTCPAY_BTCLIGHTNING: "type=clightning;server=unix://etc/clightning_bitcoin/lightning-rpc"
+#    links:
+#    - nbxplorer
+#    - postgres
+#    - clightning_litecoin
+#    - clightning_bitcoin
+#    volumes:
+#    - "btcpay_datadir:/datadir"
+#    - "nbxplorer_datadir:/root/.nbxplorer"
+#    - "clightning_bitcoin_datadir:/etc/clightning_bitcoin"
+
+  nbxplorer:
+#    restart: unless-stopped
+    image: nicolasdorier/nbxplorer:1.0.2.31
+    expose:
+    - "32838"
+    environment:
+      NBXPLORER_NETWORK: ${NBITCOIN_NETWORK:-regtest}
+      NBXPLORER_BIND: 0.0.0.0:32838
+      NBXPLORER_CHAINS: "ltc,btc"
+      NBXPLORER_BTCRPCURL: http://bitcoind:43782/
+      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
+    volumes:
+    - "nbxplorer_datadir:/datadir"
+    - "bitcoin_datadir:/root/.bitcoin"
+    links:
+    - bitcoind
+
+  postgres:
+#    restart: unless-stopped
+    image: postgres:9.6.5
+    volumes:
+    - "postgres_datadir:/var/lib/postgresql/data"
+
+  maria_db:
+    image: mariadb:10.3.32
+    restart: on-failure
+    stop_grace_period: 1m
+    expose:
+    - "3306"
+    volumes:
+    - "maria_db_datadir:/var/lib/mysql"
+    - "./scripts:/docker-entrypoint-initdb.d"
+    environment:
+      MARIADB_USER: mempool
+      MARIADB_PASSWORD: mempool
+      MARIADB_ROOT_PASSWORD: mempool
+
+  bitcoind:
+#    restart: unless-stopped
+    container_name: bitcoind
+    image: btcplus/bitcoin-core:latest
+    environment:
+      BITCOIN_EXTRA_ARGS: |
+        txindex=1
+        datadir=/home/bitcoin/.bitcoin
+        server=1
+        blocksonly=0
+        rpcbind=0.0.0.0
+        rpcallowip=0.0.0.0/0
+        rpcport=8332
+        rpcuser=bitcoin
+        rpcpassword=Test0101
+        maxconnections=64
+        zmqpubrawblock=tcp://0.0.0.0:18332
+        zmqpubrawtx=tcp://0.0.0.0:18333
+        zmqpubhashblock=tcp://0.0.0.0:18443
+        zmqpubhashtx=tcp://0.0.0.0:183444
+    expose:
+    - "8332"
+    - "8333"
+    - "18332"
+    - "18333"
+    - "18443"
+    - "18444"
+    volumes:
+    - "bitcoin_datadir:/home/bitcoin/.bitcoin"
+
+#  clightning_bitcoin:
+#    image: nicolasdorier/clightning:v0.6.1
+#    container_name: btcpayserver_clightning_bitcoin
+#    restart: unless-stopped
+#    environment:
+#      LIGHTNINGD_NETWORK: ${NBITCOIN_NETWORK:-regtest}
+#      LIGHTNINGD_CHAIN: btc
+#      LIGHTNINGD_EXPLORERURL: "http://nbxplorer:32838/"
+#      LIGHTNINGD_OPT: |
+#        bitcoin-datadir=/etc/bitcoin
+#        bitcoin-rpcconnect=bitcoind
+#        announce-addr=${BTCPAY_HOST}:9735
+#        bind-addr=0.0.0.0:9735
+#        network=${NBITCOIN_NETWORK:-regtest}
+#        alias=${LIGHTNING_ALIAS}
+#        chain=btc
+#    volumes:
+#    - "clightning_bitcoin_datadir:/root/.lightning"
+#    - "bitcoin_datadir:/etc/bitcoin"
+#    - "nbxplorer_datadir:/root/.nbxplorer"
+#    ports:
+#    - "9735:9735"
+#    links:
+#    - nbxplorer
+#    - bitcoind
+
+volumes:
+  postgres_datadir: 
+  maria_db_datadir: 
+  btcpay_datadir: 
+  nbxplorer_datadir: 
+  bitcoin_datadir: 
+  clightning_bitcoin_datadir: 
