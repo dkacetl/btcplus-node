@@ -1,2 +1,2 @@
 #!/bin/sh
-docker build -t btcplus/bitcoind:latest .
+docker build -t btcplus/bitcoind:v22.0 .

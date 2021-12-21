@@ -28,15 +28,26 @@ RUN cd bitcoin \
   && export BDB_PREFIX='/bitcoin/contrib/db4' \
   && ./configure \
     --enable-reduce-exports \
+    --with-zmq \
     --without-gui \
+    --disable-tests \
+    --disable-bench \
+    --disable-ccache \
+    --with-utils \
+    --with-libs \
+    --with-daemon \
     LDFLAGS=-static-libstdc++ \
     BDB_LIBS="-L${BDB_PREFIX}/lib -ldb_cxx-4.8" \
     BDB_CFLAGS="-I${BDB_PREFIX}/include" \
     CXXFLAGS="--param ggc-min-expand=1 --param ggc-min-heapsize=32768" \
-  && make
+  && make -j4
 
-RUN make install
+RUN cd bitcoin && make install
+RUN chmod +x /bitcoin/src/bitcoind
 
 EXPOSE 8332 8333 18332 18333 18443 18444 38333 38332
 
-CMD ['/bitcoin/bitcoind']
+COPY ./docker-entrypoint.sh /root/docker-entrypoint.sh
+RUN chmod +x /root/docker-entrypoint.sh
+ENTRYPOINT ["/root/docker-entrypoint.sh"]
+CMD ["/bitcoin/src/bitcoind"]

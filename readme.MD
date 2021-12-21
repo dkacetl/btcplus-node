@@ -1,4 +1,4 @@
-# BtcPlus node
+# BtcPlus-Node
 
 Universal tooling for manage Bitcoin Full Node including other products and tools on server.
 In comparsion of myNode, this tool aims to generic linux-base servers like Odroid-C2.

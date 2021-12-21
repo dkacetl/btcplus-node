@@ -1,6 +1,7 @@
-create database mempool;
+CREATE DATABASE mempool;
 CREATE USER IF NOT EXISTS 'mempool' IDENTIFIED BY 'mempool';
-use mempool;
+USE mempool;
+GRANT ALL PRIVILEGES ON mempool.* TO 'mempool'@'%';
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";

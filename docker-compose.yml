@@ -33,28 +33,68 @@ services:
 #    - "nbxplorer_datadir:/root/.nbxplorer"
 #    - "clightning_bitcoin_datadir:/etc/clightning_bitcoin"
 
-  nbxplorer:
-#    restart: unless-stopped
-    image: nicolasdorier/nbxplorer:1.0.2.31
-    expose:
-    - "32838"
-    environment:
-      NBXPLORER_NETWORK: ${NBITCOIN_NETWORK:-regtest}
-      NBXPLORER_BIND: 0.0.0.0:32838
-      NBXPLORER_CHAINS: "ltc,btc"
-      NBXPLORER_BTCRPCURL: http://bitcoind:43782/
-      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
-    volumes:
-    - "nbxplorer_datadir:/datadir"
-    - "bitcoin_datadir:/root/.bitcoin"
-    links:
-    - bitcoind
+#  nbxplorer:
+##    restart: unless-stopped
+#    image: nicolasdorier/nbxplorer:1.0.2.31
+#    expose:
+#    - "32838"
+#    environment:
+#      NBXPLORER_NETWORK: ${NBITCOIN_NETWORK:-regtest}
+#      NBXPLORER_BIND: 0.0.0.0:32838
+#      NBXPLORER_CHAINS: "ltc,btc"
+#      NBXPLORER_BTCRPCURL: http://bitcoind:43782/
+#      NBXPLORER_BTCNODEENDPOINT: bitcoind:39388
+#    volumes:
+#    - "nbxplorer_datadir:/datadir"
+#    - "bitcoin_datadir:/root/.bitcoin"
+#    links:
+#    - bitcoind
 
-  postgres:
-#    restart: unless-stopped
-    image: postgres:9.6.5
+#  postgres:
+##    restart: unless-stopped
+#    image: postgres:9.6.5
+#    volumes:
+#    - "postgres_datadir:/var/lib/postgresql/data"
+
+  mempool_backend:
+    image: btcplus/mempool-backend:latest
+    user: "1000:1000"
+    restart: on-failure
+    stop_grace_period: 1m
+    command: "./wait-for-it.sh db:3306 --timeout=720 --strict -- ./start.sh"
     volumes:
-    - "postgres_datadir:/var/lib/postgresql/data"
+      - ./data:/backend/cache
+    environment:
+      RPC_HOST: "127.0.0.1"
+      RPC_PORT: "8332"
+      RPC_USER: "mempool"
+      RPC_PASS: "mempool"
+      ELECTRUM_HOST: "127.0.0.1"
+      ELECTRUM_PORT: "50002"
+      ELECTRUM_TLS: "false"
+      MYSQL_HOST: "db"
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: "mempool"
+      MYSQL_USER: "mempool"
+      MYSQL_PASS: "mempool"
+      BACKEND_MAINNET_HTTP_PORT: "8999"
+      CACHE_DIR: "/backend/cache"
+      MEMPOOL_CLEAR_PROTECTION_MINUTES: "20"
+
+  electrum:
+    build:
+      context: ./build-electrum
+    restart: on-failure
+    command: ""
+    ports:
+      - 50001:50001
+      - 50002:50002
+      - 4224:4224
+      - 8332:8332
+    environment:
+      ELECTRUM: "electrum"
+    depends_on:
+      - maria_db
 
   maria_db:
     image: mariadb:10.3.32
@@ -64,32 +104,35 @@ services:
     - "3306"
     volumes:
     - "maria_db_datadir:/var/lib/mysql"
-    - "./scripts:/docker-entrypoint-initdb.d"
+    - "./scripts/maria_db:/docker-entrypoint-initdb.d"
     environment:
       MARIADB_USER: mempool
       MARIADB_PASSWORD: mempool
       MARIADB_ROOT_PASSWORD: mempool
 
   bitcoind:
-#    restart: unless-stopped
+    build:
+      context: ./build-bitcoin-core
+      args:
+        TAG: "v22.0"
     container_name: bitcoind
-    image: btcplus/bitcoin-core:latest
+    image: btcplus/bitcoind:v22.0
     environment:
-      BITCOIN_EXTRA_ARGS: |
-        txindex=1
-        datadir=/home/bitcoin/.bitcoin
-        server=1
-        blocksonly=0
-        rpcbind=0.0.0.0
-        rpcallowip=0.0.0.0/0
-        rpcport=8332
-        rpcuser=bitcoin
-        rpcpassword=Test0101
-        maxconnections=64
-        zmqpubrawblock=tcp://0.0.0.0:18332
-        zmqpubrawtx=tcp://0.0.0.0:18333
-        zmqpubhashblock=tcp://0.0.0.0:18443
-        zmqpubhashtx=tcp://0.0.0.0:183444
+      BITCOIN_CONF: |
+        txindex=1\n
+        datadir=/root/.bitcoin\n
+        server=1\n
+        blocksonly=0\n
+        rpcbind=127.0.0.1\n
+        rpcallowip=0.0.0.0/0\n
+        rpcport=8332\n
+        rpcuser=bitcoin\n
+        rpcpassword=Test0101\n
+        maxconnections=64\n
+        zmqpubrawblock=tcp://0.0.0.0:18332\n
+        zmqpubrawtx=tcp://0.0.0.0:18333\n
+        zmqpubhashblock=tcp://0.0.0.0:18443\n
+        zmqpubhashtx=tcp://0.0.0.0:183444\n
     expose:
     - "8332"
     - "8333"
@@ -98,7 +141,7 @@ services:
     - "18443"
     - "18444"
     volumes:
-    - "bitcoin_datadir:/home/bitcoin/.bitcoin"
+    - "bitcoin_datadir:/root/.bitcoin"
 
 #  clightning_bitcoin:
 #    image: nicolasdorier/clightning:v0.6.1
