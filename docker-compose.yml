@@ -1,5 +1,33 @@
 version: "3"
 services:
+  bitcoind:
+    container_name: bitcoind
+    image: btcplus/bitcoind:latest
+    command:
+      - "-txindex=1"
+      - "-server=1"
+      - "-rpcbind=127.0.0.1"
+      - "-rpcallowip=0.0.0.0/0"
+      - "-rpcport=8332"
+      - "-rpcuser=bitcoin"
+      - "-rpcpassword=Test0101"
+      - "-maxconnections=64"
+      - "-zmqpubrawblock=tcp://0.0.0.0:18332"
+      - "-zmqpubrawtx=tcp://0.0.0.0:18333"
+      - "-zmqpubhashblock=tcp://0.0.0.0:18443"
+      - "-zmqpubhashtx=tcp://0.0.0.0:183444"
+    environment:
+      BITCOIN_DATA: /home/bitcoin/.bitcoin
+    expose:
+      - "8332"
+      - "8333"
+      - "18332"
+      - "18333"
+      - "18443"
+      - "18444"
+    volumes:
+      - "bitcoin_datadir:/home/bitcoin/.bitcoin"
+
 #  btcpayserver:
 #    restart: unless-stopped
 #    image: nicolasdorier/btcpayserver:1.0.2.106
@@ -110,38 +138,38 @@ services:
       MARIADB_PASSWORD: mempool
       MARIADB_ROOT_PASSWORD: mempool
 
-  bitcoind:
-    build:
-      context: ./build-bitcoin-core
-      args:
-        TAG: "v22.0"
-    container_name: bitcoind
-    image: btcplus/bitcoind:v22.0
-    environment:
-      BITCOIN_CONF: |
-        txindex=1\n
-        datadir=/root/.bitcoin\n
-        server=1\n
-        blocksonly=0\n
-        rpcbind=127.0.0.1\n
-        rpcallowip=0.0.0.0/0\n
-        rpcport=8332\n
-        rpcuser=bitcoin\n
-        rpcpassword=Test0101\n
-        maxconnections=64\n
-        zmqpubrawblock=tcp://0.0.0.0:18332\n
-        zmqpubrawtx=tcp://0.0.0.0:18333\n
-        zmqpubhashblock=tcp://0.0.0.0:18443\n
-        zmqpubhashtx=tcp://0.0.0.0:183444\n
-    expose:
-    - "8332"
-    - "8333"
-    - "18332"
-    - "18333"
-    - "18443"
-    - "18444"
-    volumes:
-    - "bitcoin_datadir:/root/.bitcoin"
+#  bitcoind_experiments:
+#    build:
+#      context: build-bitcoin-core-experiments
+#      args:
+#        TAG: "v22.0"
+#    container_name: bitcoind
+#    image: btcplus/bitcoind:v22.0
+#    environment:
+#      BITCOIN_CONF: |
+#        txindex=1\n
+#        datadir=/root/.bitcoin\n
+#        server=1\n
+#        blocksonly=0\n
+#        rpcbind=127.0.0.1\n
+#        rpcallowip=0.0.0.0/0\n
+#        rpcport=8332\n
+#        rpcuser=bitcoin\n
+#        rpcpassword=Test0101\n
+#        maxconnections=64\n
+#        zmqpubrawblock=tcp://0.0.0.0:18332\n
+#        zmqpubrawtx=tcp://0.0.0.0:18333\n
+#        zmqpubhashblock=tcp://0.0.0.0:18443\n
+#        zmqpubhashtx=tcp://0.0.0.0:183444\n
+#    expose:
+#    - "8332"
+#    - "8333"
+#    - "18332"
+#    - "18333"
+#    - "18443"
+#    - "18444"
+#    volumes:
+#    - "bitcoin_datadir:/root/.bitcoin"
 
 #  clightning_bitcoin:
 #    image: nicolasdorier/clightning:v0.6.1
