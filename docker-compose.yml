@@ -6,16 +6,16 @@ services:
     command:
       - "-txindex=1"
       - "-server=1"
-      - "-rpcbind=127.0.0.1"
-      - "-rpcallowip=0.0.0.0/0"
+      - "-rpcbind=10.5.0.1"
+      - "-rpcallowip=10.5.0.0/16"
       - "-rpcport=8332"
       - "-rpcuser=bitcoin"
       - "-rpcpassword=Test0101"
       - "-maxconnections=64"
-      - "-zmqpubrawblock=tcp://0.0.0.0:18332"
-      - "-zmqpubrawtx=tcp://0.0.0.0:18333"
-      - "-zmqpubhashblock=tcp://0.0.0.0:18443"
-      - "-zmqpubhashtx=tcp://0.0.0.0:183444"
+      - "-zmqpubrawblock=tcp://10.5.0.1:18332"
+      - "-zmqpubrawtx=tcp://10.5.0.1:18333"
+      - "-zmqpubhashblock=tcp://10.5.0.1:18443"
+      - "-zmqpubhashtx=tcp://10.5.0.1:183444"
     environment:
       BITCOIN_DATA: /home/bitcoin/.bitcoin
     expose:
@@ -25,8 +25,80 @@ services:
       - "18333"
       - "18443"
       - "18444"
+    networks:
+      btcplus-network:
+        ipv4_address: 10.5.0.2
     volumes:
       - "bitcoin_datadir:/home/bitcoin/.bitcoin"
+
+  maria_db:
+    image: mariadb:10.3.32
+    restart: on-failure
+    stop_grace_period: 1m
+    expose:
+      - "3306"
+    networks:
+      btcplus-network:
+
+    volumes:
+      - "maria_db_datadir:/var/lib/mysql"
+      - "./scripts/maria_db:/docker-entrypoint-initdb.d"
+    environment:
+      MARIADB_USER: mempool
+      MARIADB_PASSWORD: mempool
+      MARIADB_ROOT_PASSWORD: mempool
+
+  electrum:
+    build:
+      context: ./build-electrum
+    restart: on-failure
+    command: ""
+    ports:
+      - 50001:50001
+      - 50002:50002
+      - 4224:4224
+      - 8332:8332
+    networks:
+      btcplus-network:
+    environment:
+      ELECTRUM: "electrum"
+    depends_on:
+      - maria_db
+
+networks:
+  btcplus-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+
+#  bitcoin-cli-info:
+#    container_name: bitcoin-cli-info
+#    image: btcplus/bitcoind:latest
+#    command:
+#      - "bitcoin-cli"
+#      - "-rpcconnect="
+#      - "-rpcallowip=0.0.0.0/0"
+#      - "-rpcport=8332"
+#      - "-rpcuser=bitcoin"
+#      - "-rpcpassword=Test0101"
+#      - "-maxconnections=64"
+#      - "-zmqpubrawblock=tcp://0.0.0.0:18332"
+#      - "-zmqpubrawtx=tcp://0.0.0.0:18333"
+#      - "-zmqpubhashblock=tcp://0.0.0.0:18443"
+#      - "-zmqpubhashtx=tcp://0.0.0.0:183444"
+#    environment:
+#      BITCOIN_DATA: /home/bitcoin/.bitcoin
+#    expose:
+#      - "8332"
+#      - "8333"
+#      - "18332"
+#      - "18333"
+#      - "18443"
+#      - "18444"
+#    volumes:
+#      - "bitcoin_datadir:/home/bitcoin/.bitcoin"
 
 #  btcpayserver:
 #    restart: unless-stopped
@@ -84,59 +156,30 @@ services:
 #    volumes:
 #    - "postgres_datadir:/var/lib/postgresql/data"
 
-  mempool_backend:
-    image: btcplus/mempool-backend:latest
-    user: "1000:1000"
-    restart: on-failure
-    stop_grace_period: 1m
-    command: "./wait-for-it.sh db:3306 --timeout=720 --strict -- ./start.sh"
-    volumes:
-      - ./data:/backend/cache
-    environment:
-      RPC_HOST: "127.0.0.1"
-      RPC_PORT: "8332"
-      RPC_USER: "mempool"
-      RPC_PASS: "mempool"
-      ELECTRUM_HOST: "127.0.0.1"
-      ELECTRUM_PORT: "50002"
-      ELECTRUM_TLS: "false"
-      MYSQL_HOST: "db"
-      MYSQL_PORT: "3306"
-      MYSQL_DATABASE: "mempool"
-      MYSQL_USER: "mempool"
-      MYSQL_PASS: "mempool"
-      BACKEND_MAINNET_HTTP_PORT: "8999"
-      CACHE_DIR: "/backend/cache"
-      MEMPOOL_CLEAR_PROTECTION_MINUTES: "20"
-
-  electrum:
-    build:
-      context: ./build-electrum
-    restart: on-failure
-    command: ""
-    ports:
-      - 50001:50001
-      - 50002:50002
-      - 4224:4224
-      - 8332:8332
-    environment:
-      ELECTRUM: "electrum"
-    depends_on:
-      - maria_db
-
-  maria_db:
-    image: mariadb:10.3.32
-    restart: on-failure
-    stop_grace_period: 1m
-    expose:
-    - "3306"
-    volumes:
-    - "maria_db_datadir:/var/lib/mysql"
-    - "./scripts/maria_db:/docker-entrypoint-initdb.d"
-    environment:
-      MARIADB_USER: mempool
-      MARIADB_PASSWORD: mempool
-      MARIADB_ROOT_PASSWORD: mempool
+#  mempool_backend:
+#    image: btcplus/mempool-backend:latest
+#    user: "1000:1000"
+#    restart: on-failure
+#    stop_grace_period: 1m
+#    command: "./wait-for-it.sh db:3306 --timeout=720 --strict -- ./start.sh"
+#    volumes:
+#      - ./data:/backend/cache
+#    environment:
+#      RPC_HOST: "127.0.0.1"
+#      RPC_PORT: "8332"
+#      RPC_USER: "mempool"
+#      RPC_PASS: "mempool"
+#      ELECTRUM_HOST: "127.0.0.1"
+#      ELECTRUM_PORT: "50002"
+#      ELECTRUM_TLS: "false"
+#      MYSQL_HOST: "db"
+#      MYSQL_PORT: "3306"
+#      MYSQL_DATABASE: "mempool"
+#      MYSQL_USER: "mempool"
+#      MYSQL_PASS: "mempool"
+#      BACKEND_MAINNET_HTTP_PORT: "8999"
+#      CACHE_DIR: "/backend/cache"
+#      MEMPOOL_CLEAR_PROTECTION_MINUTES: "20"
 
 #  bitcoind_experiments:
 #    build:

@@ -2,3 +2,5 @@
 /build-bitcoin-core-experiments/docker-bitcoin-core/
 /build-bitcoin-core/docker-bitcoin-core/
 /mempool-2.2.2/
+/build-electrum/electrum-server/
+/build-electrumx/electrumx/
