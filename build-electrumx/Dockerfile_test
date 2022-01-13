@@ -1,0 +1,25 @@
+FROM ubuntu:20.04
+MAINTAINER dkacetl
+
+#EXPOSE 50002
+#ENV VERSION 4.1.5
+
+RUN set -x \
+    && apt-get update \
+	&& apt-get -y install libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev libzstd-dev \
+        curl gosu git wget \
+        zip build-essential libtool autotools-dev automake pkg-config bsdmainutils python3
+
+RUN git clone https://github.com/facebook/rocksdb.git \
+    && cd rocksdb/ ; DEBUG_LEVEL=0 make all \
+    && pip3 install python-rocksdb
+
+RUN git clone https://github.com/spesmilo/electrumx.git \
+    && cd electrumx ; pip3 install .
+#USER mempool
+#ENV HOME /home/mempool
+#WORKDIR /home/mempool
+#VOLUME /electrum
+#
+#CMD ["/usr/bin/xpra", "start", ":100", "--start-child=/usr/local/bin/electrum", "--bind-tcp=0.0.0.0:50002","--daemon=yes", "--notifications=no", "--mdns=no", "--pulseaudio=no", "--html=off", "--speaker=disabled", "--microphone=disabled", "--webcam=no", "--printing=no", "--dbus-launch=", "--exit-with-children"]
+#ENTRYPOINT ["electrum"]

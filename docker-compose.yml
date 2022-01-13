@@ -2,20 +2,20 @@ version: "3"
 services:
   bitcoind:
     container_name: bitcoind
-    image: btcplus/bitcoind:latest
+    image: btcplus/bitcoind:22
     command:
       - "-txindex=1"
       - "-server=1"
-      - "-rpcbind=10.5.0.1"
+      - "-rpcbind=10.5.0.2"
       - "-rpcallowip=10.5.0.0/16"
       - "-rpcport=8332"
       - "-rpcuser=bitcoin"
       - "-rpcpassword=Test0101"
       - "-maxconnections=64"
-      - "-zmqpubrawblock=tcp://10.5.0.1:18332"
-      - "-zmqpubrawtx=tcp://10.5.0.1:18333"
-      - "-zmqpubhashblock=tcp://10.5.0.1:18443"
-      - "-zmqpubhashtx=tcp://10.5.0.1:183444"
+      - "-zmqpubrawblock=tcp://10.5.0.2:18332"
+      - "-zmqpubrawtx=tcp://10.5.0.2:18333"
+      - "-zmqpubhashblock=tcp://10.5.0.2:18443"
+      - "-zmqpubhashtx=tcp://10.5.0.2:183444"
     environment:
       BITCOIN_DATA: /home/bitcoin/.bitcoin
     expose:
@@ -39,7 +39,6 @@ services:
       - "3306"
     networks:
       btcplus-network:
-
     volumes:
       - "maria_db_datadir:/var/lib/mysql"
       - "./scripts/maria_db:/docker-entrypoint-initdb.d"
