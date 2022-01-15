@@ -31,6 +31,22 @@ services:
     volumes:
       - "bitcoin_datadir:/home/bitcoin/.bitcoin"
 
+  electrumx:
+    image: btcplus/electrumx:latest
+    restart: on-failure
+    ports:
+      - 50001:50001 # electrum tcp
+      - 50002:50002 # electrum ssl
+      - 8000:8000 # local rpc
+    networks:
+      btcplus-network:
+        ipv4_address: 10.5.0.3
+    environment:
+      DAEMON_URL: "http://bitcoin:Test0101@10.5.0.2:8332"
+      "COIN": "Bitcoin"
+    volumes:
+      - "electrumx_datadir:/data"
+
   maria_db:
     image: mariadb:10.3.32
     restart: on-failure
@@ -39,6 +55,7 @@ services:
       - "3306"
     networks:
       btcplus-network:
+        ipv4_address: 10.5.0.4
     volumes:
       - "maria_db_datadir:/var/lib/mysql"
       - "./scripts/maria_db:/docker-entrypoint-initdb.d"
@@ -47,22 +64,33 @@ services:
       MARIADB_PASSWORD: mempool
       MARIADB_ROOT_PASSWORD: mempool
 
-  electrum:
-    build:
-      context: ./build-electrum
+  mempool_backend:
+    image: btcplus/mempool-backend:latest
+    user: "1000:1000"
     restart: on-failure
-    command: ""
-    ports:
-      - 50001:50001
-      - 50002:50002
-      - 4224:4224
-      - 8332:8332
+    stop_grace_period: 1m
+    command: "./wait-for-it.sh 10.5.0.4:3306 --timeout=720 --strict -- ./start.sh"
+    volumes:
+      - "mempool_backend_datadir:/backend/cache"
     networks:
       btcplus-network:
+        ipv4_address: 10.5.0.5
     environment:
-      ELECTRUM: "electrum"
-    depends_on:
-      - maria_db
+      RPC_HOST: "10.5.0.2"
+      RPC_PORT: "8332"
+      RPC_USER: "bitcoin"
+      RPC_PASS: "Test0101"
+      ELECTRUM_HOST: "10.5.0.3"
+      ELECTRUM_PORT: "50001"
+      ELECTRUM_TLS: "false"
+      MYSQL_HOST: "10.5.0.4"
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: "mempool"
+      MYSQL_USER: "mempool"
+      MYSQL_PASS: "mempool"
+      BACKEND_MAINNET_HTTP_PORT: "8333"
+      CACHE_DIR: "/backend/cache"
+      MEMPOOL_CLEAR_PROTECTION_MINUTES: "20"
 
 networks:
   btcplus-network:
@@ -155,31 +183,6 @@ networks:
 #    volumes:
 #    - "postgres_datadir:/var/lib/postgresql/data"
 
-#  mempool_backend:
-#    image: btcplus/mempool-backend:latest
-#    user: "1000:1000"
-#    restart: on-failure
-#    stop_grace_period: 1m
-#    command: "./wait-for-it.sh db:3306 --timeout=720 --strict -- ./start.sh"
-#    volumes:
-#      - ./data:/backend/cache
-#    environment:
-#      RPC_HOST: "127.0.0.1"
-#      RPC_PORT: "8332"
-#      RPC_USER: "mempool"
-#      RPC_PASS: "mempool"
-#      ELECTRUM_HOST: "127.0.0.1"
-#      ELECTRUM_PORT: "50002"
-#      ELECTRUM_TLS: "false"
-#      MYSQL_HOST: "db"
-#      MYSQL_PORT: "3306"
-#      MYSQL_DATABASE: "mempool"
-#      MYSQL_USER: "mempool"
-#      MYSQL_PASS: "mempool"
-#      BACKEND_MAINNET_HTTP_PORT: "8999"
-#      CACHE_DIR: "/backend/cache"
-#      MEMPOOL_CLEAR_PROTECTION_MINUTES: "20"
-
 #  bitcoind_experiments:
 #    build:
 #      context: build-bitcoin-core-experiments
@@ -240,9 +243,11 @@ networks:
 #    - bitcoind
 
 volumes:
+  electrumx_datadir:
   postgres_datadir: 
   maria_db_datadir: 
   btcpay_datadir: 
   nbxplorer_datadir: 
-  bitcoin_datadir: 
+  bitcoin_datadir:
+  mempool_backend_datadir:
   clightning_bitcoin_datadir: 
