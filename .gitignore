@@ -5,3 +5,4 @@
 /build-electrum/electrum-server/
 /build-electrumx/electrumx/
 /build-electrumx/docker-electrumx/
+/build-lnd/Dockerfile

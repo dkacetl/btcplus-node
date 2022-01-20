@@ -1,6 +1,6 @@
 ARG VERSION=1.16.0
 
-FROM python:3.7-alpine3.11
+FROM python:3.10-alpine3.15
 LABEL maintainer="Luke Childs <lukechilds123@gmail.com>"
 
 ARG VERSION
@@ -27,6 +27,7 @@ ENV SERVICES=tcp://:50001,ssl://:50002,wss://:50004,rpc://0.0.0.0:8000
 ENV SSL_CERTFILE ${DB_DIRECTORY}/electrumx.crt
 ENV SSL_KEYFILE ${DB_DIRECTORY}/electrumx.key
 ENV HOST ""
+ENV CACHE_MB 600
 WORKDIR /data
 
 EXPOSE 50001 50002 50004 8000

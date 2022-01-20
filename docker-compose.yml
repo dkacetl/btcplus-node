@@ -31,6 +31,27 @@ services:
     volumes:
       - "bitcoin_datadir:/home/bitcoin/.bitcoin"
 
+  lnd:
+    container_name: lnd
+    image: btcplus/lnd:v0.14.1-beta
+    command:
+      - "--bitcoin.active"
+      - "--bitcoin.mainnet"
+      - "--bitcoin.node=bitcoind"
+      - "--bitcoind.rpchost=10.5.0.2"
+      - "--bitcoind.rpcuser=bitcoin"
+      - "--bitcoind.rpcpass=Test0101"
+      - "--bitcoind.zmqpubrawblock=tcp://10.5.0.2:18332"
+      - "--bitcoind.zmqpubrawtx=tcp://10.5.0.2:18333"
+    expose:
+      - "9735"
+      - "10009"
+    networks:
+      btcplus-network:
+        ipv4_address: 10.5.0.6
+    volumes:
+      - "lnd_datadir:/root/.lnd"
+
   electrumx:
     image: btcplus/electrumx:latest
     restart: on-failure
@@ -43,7 +64,8 @@ services:
         ipv4_address: 10.5.0.3
     environment:
       DAEMON_URL: "http://bitcoin:Test0101@10.5.0.2:8332"
-      "COIN": "Bitcoin"
+      COIN: "Bitcoin"
+      CACHE_MB: 600 # issue on small computers like odroid
     volumes:
       - "electrumx_datadir:/data"
 
@@ -249,5 +271,6 @@ volumes:
   btcpay_datadir: 
   nbxplorer_datadir: 
   bitcoin_datadir:
+  lnd_datadir:
   mempool_backend_datadir:
   clightning_bitcoin_datadir: 
