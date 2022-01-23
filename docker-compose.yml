@@ -87,7 +87,7 @@ services:
       MARIADB_ROOT_PASSWORD: mempool
 
   mempool_backend:
-    image: btcplus/mempool-backend:latest
+    image: btcplus/mempool-backend:2.3.0
     user: "1000:1000"
     restart: on-failure
     stop_grace_period: 1m
@@ -98,20 +98,22 @@ services:
       btcplus-network:
         ipv4_address: 10.5.0.5
     environment:
-      RPC_HOST: "10.5.0.2"
-      RPC_PORT: "8332"
-      RPC_USER: "bitcoin"
-      RPC_PASS: "Test0101"
-      ELECTRUM_HOST: "10.5.0.3"
-      ELECTRUM_PORT: "50001"
-      ELECTRUM_TLS: "false"
-      MYSQL_HOST: "10.5.0.4"
-      MYSQL_PORT: "3306"
-      MYSQL_DATABASE: "mempool"
-      MYSQL_USER: "mempool"
-      MYSQL_PASS: "mempool"
-      BACKEND_MAINNET_HTTP_PORT: "8333"
-      CACHE_DIR: "/backend/cache"
+      MEMPOOL_BACKEND: "none"
+      CORE_RPC_HOST: "10.5.0.2"
+      CORE_RPC_PORT: "8332"
+      CORE_RPC_USERNAME: "bitcoin"
+      CORE_RPC_PASSWORD: "Test0101"
+#      ELECTRUM_HOST: "10.5.0.3"
+#      ELECTRUM_PORT: "50001"
+#      ELECTRUM_TLS: "false"
+      DATABASE_ENABLED: "true"
+      DATABASE_HOST: "10.5.0.4"
+      DATABASE_PORT: "3306"
+      DATABASE_DATABASE: "mempool"
+      DATABASE_USERNAME: "mempool"
+      DATABASE_PASSWORD: "mempool"
+      STATISTICS_ENABLED: "true"
+      MEMPOOL_CACHE_DIR: "/backend/cache"
       MEMPOOL_CLEAR_PROTECTION_MINUTES: "20"
 
 networks:
@@ -237,32 +239,6 @@ networks:
 #    - "18444"
 #    volumes:
 #    - "bitcoin_datadir:/root/.bitcoin"
-
-#  clightning_bitcoin:
-#    image: nicolasdorier/clightning:v0.6.1
-#    container_name: btcpayserver_clightning_bitcoin
-#    restart: unless-stopped
-#    environment:
-#      LIGHTNINGD_NETWORK: ${NBITCOIN_NETWORK:-regtest}
-#      LIGHTNINGD_CHAIN: btc
-#      LIGHTNINGD_EXPLORERURL: "http://nbxplorer:32838/"
-#      LIGHTNINGD_OPT: |
-#        bitcoin-datadir=/etc/bitcoin
-#        bitcoin-rpcconnect=bitcoind
-#        announce-addr=${BTCPAY_HOST}:9735
-#        bind-addr=0.0.0.0:9735
-#        network=${NBITCOIN_NETWORK:-regtest}
-#        alias=${LIGHTNING_ALIAS}
-#        chain=btc
-#    volumes:
-#    - "clightning_bitcoin_datadir:/root/.lightning"
-#    - "bitcoin_datadir:/etc/bitcoin"
-#    - "nbxplorer_datadir:/root/.nbxplorer"
-#    ports:
-#    - "9735:9735"
-#    links:
-#    - nbxplorer
-#    - bitcoind
 
 volumes:
   electrumx_datadir:
